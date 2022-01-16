@@ -1,0 +1,46 @@
+import axios from 'axios';
+
+//redux
+import {CREATE_ORDER, ORDER_PLACED} from './order.type';
+import { API_URL } from '../../../key';
+
+export const createOrder = (amount) => async(dispatch) => {
+    try{
+        const order = await axios({
+            method: "POST",
+            url: `${API_URL}/payments/new`,
+        })
+
+        return dispatch({type: CREATE_ORDER, payload: order.data});
+    }catch(error){
+        return dispatch({type: 'ERROR', payload: error});
+    }
+};
+
+export const orderPlaced = (cartData) => async(dispatch) => {
+    try{
+        const placeOrder = cartData.map((foodItem) => {
+            const orderDetails = {
+                food: foodItem._id,
+                quantity: foodItem.quantity,
+                paymode: 'ONLINE',
+                paymentDetails: {
+                    itemTotal: foodItem.totalPrice,
+                    promo: 0,
+                    tax: 0,
+                }
+            }
+            axios({
+                method: "POST",
+                url: `${API_URL}/payments/new`,
+                data: {orderDetails}
+            });
+        });
+
+        await Promise.all(placeOrder);
+
+        return dispatch({type: ORDER_PLACED, payload: {}});
+    }catch(error){
+        return dispatch({type: 'ERROR', payload: error});
+    }
+}
